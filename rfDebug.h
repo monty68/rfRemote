@@ -153,8 +153,10 @@ class rfdDEBUG : public rfDevice {
               pulseShort = sp;
               pulseLong = lp;
               pulseSync = syn / 2;
-              bit0 = { PULSE_SHORT_H, PULSE_LONG_L };
-              bit1 = { PULSE_LONG_H, PULSE_SHORT_L };
+              bit0.h = PULSE_SHORT_H;
+              bit0.l = PULSE_LONG_L;
+              bit1.h = PULSE_LONG_H;
+              bit1.l = PULSE_SHORT_L;
               phase = 80;
               return false;
             }

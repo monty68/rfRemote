@@ -17,7 +17,6 @@
 #else
   #include "WProgram.h"
 #endif
-#include <util/crc16.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,6 +25,7 @@ extern "C" {
 /*
  * General equates, defintions and contstants
  */
+#define RFREMOTE_BAD_PIN    ((unsigned int)-1)
 
 // Uncomment the below to exclude the debugger receiver code
 //#define RFREMOTE_IGNORE_DEBUGGER 1
@@ -33,8 +33,8 @@ extern "C" {
 /*
  * Debug Macro's
  */
-#define DEBUGLN(A)  Serial.println(A)
-#define DEBUG(A)    Serial.print(A)
+#define DEBUGLN(A)          Serial.println(A)
+#define DEBUG(A)            Serial.print(A)
 
 /*
  * Transmitter State Machine
@@ -83,7 +83,7 @@ class rfDevice
       , byte b0h = PULSE_SHORT_H, byte b0l = PULSE_LONG_L
       , byte b1h = PULSE_LONG_H, byte b1l = PULSE_SHORT_L
       , byte bfh = 0, byte bfl = 0)
-      : devName(name), pktBits(bits), pktGaps(5), rxRepeat(2), txRepeat(6)
+      : devName(name), pktBits(bits), pktGaps(5), rxRepeat(2), txRepeat(8)
       , tolerance(tol), pulseShort(shp), pulseLong(lnp), pulseSync(snp)
       , pulseLatch(ltp)
       {
@@ -113,7 +113,8 @@ class rfDevice
   private:
     rfDevice();
     static char bitBuffer[64 + 1];
-    
+    static uint16_t crc16(uint16_t crc, uint8_t a);
+
   protected:
     const char *devName;      // Device Name
     byte pktBits;             // Number of bits in a packet
@@ -168,16 +169,21 @@ class rfRemote
   private:
     rfRemote() {};
   public:
-    rfRemote(int rxpin, int txpin);
+    rfRemote(unsigned int rxpin, unsigned int txpin);
     ~rfRemote();
     static rfDevice *ptxDevice;
 
 #ifndef RFREMOTE_IGNORE_DEBUGGER
     static rfDevice* rxDebugger();
 #endif
-    rfDevice* rxDecoder();    
+    static bool rxEnable(unsigned int pin);
+    static void rxDisable();
+    rfDevice* rxDecoder();
     uint32_t rxPacket(rfDevice *device);
     uint32_t rxPacket(rfDevice *device, uint32_t *d2);
+
+    static void txEnable(unsigned int pin);
+    static void txDisable();
     rfDevice * txPacket(const char *, uint32_t d1, uint32_t d2 = 0, bool wait = true);
     rfDevice * txPacket(byte type, uint32_t d1, uint32_t d2 = 0, bool wait = true);
     bool txPacket(rfDevice* device, uint32_t d1, uint32_t d2 = 0, bool wait = true);
@@ -186,22 +192,18 @@ class rfRemote
 
     static void txStop();
 
-    static int txPin;
+    static unsigned int txPin;
     static const char *ptxData;
     static volatile RFREMOTE_TX_STATE txState;
 
   protected:
-    bool rxEnable(int pin);
-    void rxDisable();
     static void rxISR();
-    static int rxPin;
+    static unsigned int rxPin;
     static volatile bool rxSignal;
     static volatile word rxPulse;
     static volatile unsigned long rxStamp;
 
-    static void txEnable(int pin);
     static bool txStart(rfDevice* ptxdevice, const char *ptxdata);
-    static void txDisable();
     static void txISR();
 
     /*
