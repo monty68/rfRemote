@@ -1,0 +1,7 @@
+man LITERAL1
+RFremote	KEYWORD1
+RFdevice	KEYWORD1
+
+rxPacket	KEYWORD2
+txPacket	KEYWORD2
+
